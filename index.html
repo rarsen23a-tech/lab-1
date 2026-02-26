@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<title>Дошка оголошень групи</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="app.js" defer></script>
+</head>
+<body>
+<h1>Дошка оголошень групи</h1>
+<div class="container">
+<section class="form-section">
+<h2>Додати пост</h2>
+<form id="postForm" novalidate>
+<div class="field">
+<label for="title">Назва</label>
+<input id="title" name="title" type="text" />
+<small class="error" id="titleError"></small>
+</div>
+
+<div class="field">
+<label for="category">Категорія</label>
+<select id="category" name="category">
+<option value="">-- Оберіть --</option>
+<option>Навчання</option>
+<option>Оголошення</option>
+<option>Подія</option>
+</select>
+<small class="error" id="categoryError"></small>
+</div>
+
+<div class="field">
+<label for="body">Вміст</label>
+<textarea id="body" name="body"></textarea>
+<small class="error" id="bodyError"></small>
+</div>
+
+<div class="field">
+<label for="author">Автор</label>
+<input id="author" name="author" type="text" />
+<small class="error" id="authorError"></small>
+</div>
+
+<button type="submit">Додати</button>
+<button type="button" id="cancelEditBtn" style="display:none;">Скасувати</button>
+</form>
+</section>
+<section class="list-section">
+<input id="searchInput" type="text" placeholder="Пошук...">
+
+<select id="sortSelect">
+  <option value="none">Без сортування</option>
+  <option value="dateAsc">Дата ↑</option>
+  <option value="dateDesc">Дата ↓</option>
+  <option value="authorAsc">Автор А-Я</option>
+  <option value="authorDesc">Автор Я-А</option>
+</select>
+
+<h2>Список постів</h2>
+<table id="postsTable">
+<thead>
+<tr>
+<th>ID</th>
+<th>Назва</th>
+<th>Категорія</th>
+<th>Автор</th>
+<th>Дата створення</th>
+<th>Дії</th>
+</tr>
+</thead>
+<tbody id="postsBody"></tbody>
+</table>
+</section>
+</div>
+
+<div id="viewModal" style="display:none;" class="modal">
+<div class="modal-content">
+<button type="button" id="closeViewBtn">Закрити</button>
+<div id="viewContent"></div>
+</div>
+</div>
+</body>
+</html>
