@@ -15,17 +15,36 @@ type IdParams = {
 
 type Query = Record<string, string | undefined>;
 
+const normalizeOrder = (value?: string): 'asc' | 'desc' | undefined => {
+    if (value === 'asc' || value === 'desc') return value;
+    return undefined;
+};
+
+const normalizeSortBy = (value?: string): 'id' | 'userId' | 'title' | undefined => {
+    if (value === 'id' || value === 'userId' || value === 'title') {
+        return value;
+    }
+    return undefined;
+};
+
 export const getAll = (
     req: Request<Record<string, never>, unknown, unknown, Query>,
     res: Response
 ) => {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const pageSize = Number(req.query.limit) || 10;
 
-    
-    const result = service.getAll({ page, pageSize: limit });
+    const result = service.getAll({
+        page,
+        pageSize,
+        sortBy: normalizeSortBy(req.query.sortBy),
+        order: normalizeOrder(req.query.order)
+    });
 
-    return res.json(result);
+    return res.json({
+        ...result,
+        items: result.items.map(item => new PostResponseDto(item))
+    });
 };
 
 export const getById = (
