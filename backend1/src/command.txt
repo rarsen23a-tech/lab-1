@@ -10,7 +10,7 @@ curl http://localhost:3000/api/posts/1
 curl -X PUT http://localhost:3000/api/posts/1 -H "Content-Type: application/json" -d "{ \"title\": \"Updated title\", \"content\": \"Updated content\" }"
 curl -X DELETE http://localhost:3000/api/posts/1
 ==============
-curl -X POST http://localhost:3000/comments -H "Content-Type: application/json" -d "{\"text\":\"test comment\",\"postId\":1}"
+curl -X POST http://localhost:3000/api/comments -H "Content-Type: application/json" -d "{\"postId\":1,\"userId\":1,\"text\":\"Hello\"}"
 curl -X PUT http://localhost:3000/comments/1 -H "Content-Type: application/json" -d "{\"text\":\"updated comment\"}"
 curl -X PATCH http://localhost:3000/comments/1 -H "Content-Type: application/json" -d "{\"text\":\"updated comment\"}"
 curl -X DELETE http://localhost:3000/comments/1
