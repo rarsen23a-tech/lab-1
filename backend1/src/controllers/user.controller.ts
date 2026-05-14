@@ -24,12 +24,30 @@ const toResponse = (user: User): UserResponseDto => {
     return new UserResponseDto(user);
 };
 
-export const getAll = (req: Request<IdParams, unknown, unknown, Query>, res: Response) => {
+
+const normalizeOrder = (value?: string): 'asc' | 'desc' | undefined => {
+    if (value === 'asc' || value === 'desc') return value;
+    return undefined;
+};
+
+const normalizeSortBy = (value?: string): 'id' | 'name' | undefined => {
+    if (value === 'id' || value === 'name') return value;
+    return undefined;
+};
+
+export const getAll = (
+    req: Request<IdParams, unknown, unknown, Query>,
+    res: Response
+) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    
-    const result = service.getAll({ page, pageSize: limit });
+    const result = service.getAll({
+        page,
+        pageSize: limit,
+        sortBy: normalizeSortBy(req.query.sortBy),
+        order: normalizeOrder(req.query.order)
+    });
 
     return res.json({
         ...result,
