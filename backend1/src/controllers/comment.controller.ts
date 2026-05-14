@@ -8,17 +8,48 @@ type IdParams = {
     id: string;
 };
 
-export const getAll = (req: Request, res: Response) => {
+type Query = Record<string, string | undefined>;
+
+const toString = (value: unknown): string | undefined => {
+    if (typeof value === 'string') return value;
+    return undefined;
+};
+
+const normalizeOrder = (value?: string): 'asc' | 'desc' | undefined => {
+    if (value === 'asc' || value === 'desc') return value;
+    return undefined;
+};
+
+const normalizeSortBy = (value?: string): 'id' | 'postId' | 'userId' | undefined => {
+    if (value === 'id' || value === 'postId' || value === 'userId') {
+        return value;
+    }
+    return undefined;
+};
+
+export const getAll = (
+    req: Request<IdParams, unknown, unknown, Query>,
+    res: Response
+) => {
     res.setHeader('Cache-Control', 'no-store');
 
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const pageSize = Number(req.query.limit) || 10;
 
-    // pass the expected single query object; service expects `pageSize`
-    const result = service.getAll({ page, pageSize: limit });
+    const result = service.getAll({
+        page,
+        pageSize,
+        postId: req.query.postId ? Number(req.query.postId) : undefined,
+        sortBy: normalizeSortBy(toString(req.query.sortBy)),
+        order: normalizeOrder(toString(req.query.order))
+    });
 
-    return res.json(result);
+    return res.json({
+        ...result,
+        items: result.items
+    });
 };
+
 export const getById = (
     req: Request<IdParams>,
     res: Response,
