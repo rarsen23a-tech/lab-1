@@ -17,34 +17,45 @@ type UpdateUserInput = {
 type GetAllQuery = {
     page?: number;
     pageSize?: number;
+    sortBy?: 'id' | 'name';
+    order?: 'asc' | 'desc';
 };
 
 export const getAll = (query?: GetAllQuery) => {
-    const users = repo.getAll();
+    const users = [...repo.getAll()]; 
+
+    if (query?.sortBy) {
+        const order = query.order === 'desc' ? -1 : 1;
+
+        users.sort((a, b) => {
+            const key = query.sortBy as keyof User;
+
+            const aVal = a[key];
+            const bVal = b[key];
+
+            if (typeof aVal === 'string' && typeof bVal === 'string') {
+                return aVal.localeCompare(bVal) * order;
+            }
+
+            return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * order;
+        });
+    }
 
     const page = Number(query?.page || 1);
     const pageSize = Number(query?.pageSize || 10);
-
-    if (page <= 0 || pageSize <= 0) {
-        throw new AppError(400, 'Invalid pagination params');
-    }
 
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
 
     const paginatedItems = users.slice(start, end);
-    const total = users.length;
-
-    const totalPages = Math.ceil(total / pageSize);
-    const hasNext = page < totalPages;
 
     return {
         items: paginatedItems,
-        total,
+        total: users.length,
         page,
         pageSize,
-        totalPages,
-        hasNext
+        totalPages: Math.ceil(users.length / pageSize),
+        hasNext: page < Math.ceil(users.length / pageSize)
     };
 };
 
