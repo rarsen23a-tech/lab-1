@@ -16,13 +16,14 @@ type GetAllQuery = {
     page?: number;
     pageSize?: number;
     userId?: number;
+    sortBy?: 'id' | 'userId' | 'title';
+    order?: 'asc' | 'desc';
 };
 
 const toId = (id: number | string) => Number(id);
 
 export const getAll = (query?: GetAllQuery) => {
     let items = postRepository.getAll();
-
 
     if (query?.userId !== undefined) {
         const userId = Number(query.userId);
@@ -34,7 +35,24 @@ export const getAll = (query?: GetAllQuery) => {
         items = items.filter(post => post.userId === userId);
     }
 
-    
+   
+    if (query?.sortBy) {
+        const order = query.order === 'desc' ? -1 : 1;
+
+        items.sort((a, b) => {
+            const key = query.sortBy as keyof typeof a;
+
+            const aVal = a[key];
+            const bVal = b[key];
+
+            if (typeof aVal === 'string' && typeof bVal === 'string') {
+                return aVal.localeCompare(bVal) * order;
+            }
+
+            return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * order;
+        });
+    }
+
     const page = Number(query?.page || 1);
     const pageSize = Number(query?.pageSize || 10);
 
