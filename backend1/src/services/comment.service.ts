@@ -22,12 +22,13 @@ type GetAllQuery = {
     page?: number;
     pageSize?: number;
     postId?: number;
+    sortBy?: 'id' | 'postId' | 'userId';
+    order?: 'asc' | 'desc';
 };
 
 export const getAll = (query?: GetAllQuery) => {
     let comments = commentRepository.findAll();
 
-  
     if (query?.postId !== undefined) {
         const postId = Number(query.postId);
 
@@ -39,6 +40,23 @@ export const getAll = (query?: GetAllQuery) => {
     }
 
   
+    if (query?.sortBy) {
+        const order = query.order === 'desc' ? -1 : 1;
+
+        comments.sort((a, b) => {
+            const key = query.sortBy as keyof Comment;
+
+            const aVal = a[key];
+            const bVal = b[key];
+
+            if (typeof aVal === 'string' && typeof bVal === 'string') {
+                return aVal.localeCompare(bVal) * order;
+            }
+
+            return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * order;
+        });
+    }
+
     const page = Number(query?.page || 1);
     const pageSize = Number(query?.pageSize || 10);
 
