@@ -1,8 +1,11 @@
+import { all, get, run } from '../db/dbClient';
+
 type Comment = {
     id: number;
     postId: number;
     userId: number;
     text: string;
+    createdAt: string;
 };
 
 type CreateCommentInput = {
@@ -15,50 +18,46 @@ type UpdateCommentInput = {
     text?: string;
 };
 
-const comments: Comment[] = [];
-let id = 1;
-
-export const findAll = () => {
-    return comments;
+export const findAll = async (): Promise<Comment[]> => {
+    return await all<Comment>('SELECT id, postId, userId, text, createdAt FROM Comments ORDER BY id DESC;');
 };
 
-export const findById = (commentId: number): Comment | undefined => {
-    return comments.find(c => c.id === commentId);
+export const findById = async (commentId: number): Promise<Comment | undefined> => {
+    return await get<Comment>(`SELECT id, postId, userId, text, createdAt FROM Comments WHERE id = ${commentId};`);
 };
 
-export const create = (data: CreateCommentInput): Comment => {
-    const comment: Comment = {
-        id: id++,
-        postId: data.postId,
-        userId: data.userId,
-        text: data.text
-    };
+export const create = async (data: CreateCommentInput): Promise<Comment> => {
+    const text = data.text.trim().replace(/'/g, "''");
+    const postId = Number(data.postId);
+    const userId = Number(data.userId);
+    const createdAt = new Date().toISOString();
 
-    comments.push(comment);
-    return comment;
+    const result = await run(`
+        INSERT INTO Comments (postId, userId, text, createdAt)
+        VALUES (${postId}, ${userId}, '${text}', '${createdAt}');
+    `);
+
+    return (await findById(result.lastID))!;
 };
 
-export const update = (
-    commentId: number,
-    data: UpdateCommentInput
-): Comment | null => {
-    const index = comments.findIndex(c => c.id === commentId);
+export const update = async (commentId: number, data: UpdateCommentInput): Promise<Comment | null> => {
+    const existing = await findById(commentId);
+    if (!existing) return null;
 
-    if (index === -1) return null;
+    const text = (data.text ?? existing.text).trim().replace(/'/g, "''");
 
-    comments[index] = {
-        ...comments[index],
-        text: data.text ?? comments[index].text
-    };
+    const result = await run(`
+        UPDATE Comments
+        SET text = '${text}'
+        WHERE id = ${commentId};
+    `);
 
-    return comments[index];
+    if (result.changes === 0) return null;
+
+    return (await findById(commentId))!;
 };
 
-export const remove = (commentId: number): boolean => {
-    const index = comments.findIndex(c => c.id === commentId);
-
-    if (index === -1) return false;
-
-    comments.splice(index, 1);
-    return true;
+export const remove = async (commentId: number): Promise<boolean> => {
+    const result = await run(`DELETE FROM Comments WHERE id = ${commentId};`);
+    return result.changes > 0;
 };
