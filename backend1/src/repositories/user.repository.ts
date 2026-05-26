@@ -1,64 +1,64 @@
+import { all, get, run } from '../db/dbClient';
+
 type User = {
     id: number;
     name: string;
+    email: string | null;
+    createdAt: string;
 };
 
 type CreateUserInput = {
     name: string;
+    email?: string;
 };
 
 type UpdateUserInput = {
     name?: string;
+    email?: string;
 };
 
-const users: User[] = [];
-let id = 1;
-
-const toId = (value: number | string): number => Number(value);
-
-export const getAll = (): User[] => {
-    return users;
+export const getAll = async (): Promise<User[]> => {
+    return await all<User>('SELECT id, name, email, createdAt FROM Users ORDER BY id DESC;');
 };
 
-export const getById = (userId: number | string): User | undefined => {
-    return users.find(u => u.id === toId(userId));
+export const getById = async (userId: number): Promise<User | undefined> => {
+    return await get<User>(`SELECT id, name, email, createdAt FROM Users WHERE id = ${userId};`);
 };
 
-export const create = (data: CreateUserInput): User => {
-    const name = data.name.trim();
+export const create = async (data: CreateUserInput): Promise<User> => {
+    const name = data.name.trim().replace(/'/g, "''");
+    const email = data.email ? `'${data.email.trim().replace(/'/g, "''")}'` : 'NULL';
+    const createdAt = new Date().toISOString();
 
-    const user: User = {
-        id: id++,
-        name
-    };
+    const result = await run(`
+        INSERT INTO Users (name, email, createdAt)
+        VALUES ('${name}', ${email}, '${createdAt}');
+    `);
 
-    users.push(user);
-    return user;
+    return (await getById(result.lastID))!;
 };
 
-export const update = (
-    userId: number | string,
-    data: UpdateUserInput
-): User | null => {
-    const index = users.findIndex(u => u.id === toId(userId));
+export const update = async (userId: number, data: UpdateUserInput): Promise<User | null> => {
+    const existing = await getById(userId);
+    if (!existing) return null;
 
-    if (index === -1) return null;
+    const name = (data.name ?? existing.name).trim().replace(/'/g, "''");
+    const email = data.email !== undefined
+        ? (data.email ? `'${data.email.trim().replace(/'/g, "''")}'` : 'NULL')
+        : (existing.email ? `'${existing.email}'` : 'NULL');
 
-    users[index] = {
-        ...users[index],
-        name: data.name !== undefined
-            ? data.name.trim()
-            : users[index].name
-    };
+    const result = await run(`
+        UPDATE Users
+        SET name = '${name}', email = ${email}
+        WHERE id = ${userId};
+    `);
 
-    return users[index];
+    if (result.changes === 0) return null;
+
+    return (await getById(userId))!;
 };
 
-export const remove = (userId: number | string): boolean => {
-    const index = users.findIndex(u => u.id === toId(userId));
-
-    if (index === -1) return false;
-
-    users.splice(index, 1);
-    return true;
+export const remove = async (userId: number): Promise<boolean> => {
+    const result = await run(`DELETE FROM Users WHERE id = ${userId};`);
+    return result.changes > 0;
 };
