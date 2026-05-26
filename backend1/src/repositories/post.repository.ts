@@ -1,10 +1,11 @@
-import AppError from '../utils/AppError';
+import { all, get, run } from '../db/dbClient';
 
 type Post = {
     id: number;
     title: string;
     content: string;
     userId: number;
+    createdAt: string;
 };
 
 type CreatePostInput = {
@@ -18,64 +19,47 @@ type UpdatePostInput = {
     content?: string;
 };
 
-const posts: Post[] = [];
-let id = 1;
-
-const toId = (value: string | number): number => Number(value);
-
-export const getAll = (): Post[] => {
-    return posts;
+export const getAll = async (): Promise<Post[]> => {
+    return await all<Post>('SELECT id, title, content, userId, createdAt FROM Posts ORDER BY id DESC;');
 };
 
-export const getById = (postId: string | number): Post | undefined => {
-    return posts.find(p => p.id === toId(postId));
+export const getById = async (postId: number): Promise<Post | undefined> => {
+    return await get<Post>(`SELECT id, title, content, userId, createdAt FROM Posts WHERE id = ${postId};`);
 };
 
-export const create = (data: CreatePostInput): Post => {
-    const title = data.title?.trim();
-    const content = data.content?.trim();
+export const create = async (data: CreatePostInput): Promise<Post> => {
+    const title = data.title.trim().replace(/'/g, "''");
+    const content = data.content.trim().replace(/'/g, "''");
+    const userId = Number(data.userId);
+    const createdAt = new Date().toISOString();
 
-    if (!title || !content || Number.isNaN(Number(data.userId))) {
-        throw new AppError(400, 'Title, content and userId are required');
-    }
+    const result = await run(`
+        INSERT INTO Posts (title, content, userId, createdAt)
+        VALUES ('${title}', '${content}', ${userId}, '${createdAt}');
+    `);
 
-    const post: Post = {
-        id: id++,
-        title,
-        content,
-        userId: Number(data.userId)
-    };
-
-    posts.push(post);
-    return post;
+    return (await getById(result.lastID))!;
 };
 
-export const update = (
-    postId: string | number,
-    data: UpdatePostInput
-): Post | null => {
-    const index = posts.findIndex(p => p.id === toId(postId));
+export const update = async (postId: number, data: UpdatePostInput): Promise<Post | null> => {
+    const existing = await getById(postId);
+    if (!existing) return null;
 
-    if (index === -1) return null;
+    const title = (data.title ?? existing.title).trim().replace(/'/g, "''");
+    const content = (data.content ?? existing.content).trim().replace(/'/g, "''");
 
-    posts[index] = {
-        ...posts[index],
-        title: data.title !== undefined
-            ? data.title.trim()
-            : posts[index].title,
-        content: data.content !== undefined
-            ? data.content.trim()
-            : posts[index].content
-    };
+    const result = await run(`
+        UPDATE Posts
+        SET title = '${title}', content = '${content}'
+        WHERE id = ${postId};
+    `);
 
-    return posts[index];
+    if (result.changes === 0) return null;
+
+    return (await getById(postId))!;
 };
 
-export const remove = (postId: string | number): boolean => {
-    const index = posts.findIndex(p => p.id === toId(postId));
-
-    if (index === -1) return false;
-
-    posts.splice(index, 1);
-    return true;
+export const remove = async (postId: number): Promise<boolean> => {
+    const result = await run(`DELETE FROM Posts WHERE id = ${postId};`);
+    return result.changes > 0;
 };
