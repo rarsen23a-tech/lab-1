@@ -1,29 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
-
 import * as service from '../services/user.service';
 import { validateUser } from '../utils/validateUser';
-
 import CreateUserRequestDto from '../dtos/CreateUserRequestDto';
 import UpdateUserRequestDto from '../dtos/UpdateUserRequestDto';
 import UserResponseDto from '../dtos/UserResponseDto';
-
 import AppError from '../utils/AppError';
 
-type IdParams = {
-    id: string;
-};
-
+type IdParams = { id: string };
 type Query = Record<string, string | undefined>;
+type User = { id: number; name: string; email: string | null; createdAt: string };
 
-type User = {
-    id: number;
-    name: string;
-};
-
-const toResponse = (user: User): UserResponseDto => {
-    return new UserResponseDto(user);
-};
-
+const toResponse = (user: User): UserResponseDto => new UserResponseDto(user);
 
 const normalizeOrder = (value?: string): 'asc' | 'desc' | undefined => {
     if (value === 'asc' || value === 'desc') return value;
@@ -35,114 +22,91 @@ const normalizeSortBy = (value?: string): 'id' | 'name' | undefined => {
     return undefined;
 };
 
-export const getAll = (
+export const getAll = async (
     req: Request<IdParams, unknown, unknown, Query>,
-    res: Response
-) => {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-
-    const result = service.getAll({
-        page,
-        pageSize: limit,
-        sortBy: normalizeSortBy(req.query.sortBy),
-        order: normalizeOrder(req.query.order)
-    });
-
-    return res.json({
-        ...result,
-        items: result.items.map(toResponse)
-    });
-};
-
-export const getById = (
-    req: Request<IdParams>,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const user = service.getById(Number(req.params.id));
-
-        if (!user) {
-            throw new AppError(404, 'User not found');
-        }
-
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const result = await service.getAll({
+            page,
+            pageSize: limit,
+            sortBy: normalizeSortBy(req.query.sortBy),
+            order: normalizeOrder(req.query.order)
+        });
         return res.json({
-            data: toResponse(user)
+            ...result,
+            items: result.items.map(toResponse)
         });
     } catch (err) {
         next(err);
     }
 };
 
-export const create = (
+export const getById = async (
+    req: Request<IdParams>,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const user = await service.getById(Number(req.params.id));
+        return res.json({ data: toResponse(user) });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const create = async (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
     try {
         const errors = validateUser(req.body);
-
         if (errors.length) {
             return next(new AppError(400, 'Invalid request body', errors));
         }
-
         const dto = new CreateUserRequestDto(req.body);
-
-        const user = service.create({
-            name: dto.name
+        const user = await service.create({
+            name: dto.name,
+            email: req.body.email
         });
-
-        return res.status(201).json({
-            data: toResponse(user)
-        });
+        return res.status(201).json({ data: toResponse(user) });
     } catch (err) {
         next(err);
     }
 };
 
-export const update = (
+export const update = async (
     req: Request<IdParams>,
     res: Response,
     next: NextFunction
 ) => {
     try {
         const errors = validateUser(req.body);
-
         if (errors.length) {
             return next(new AppError(400, 'Invalid request body', errors));
         }
-
         const dto = new UpdateUserRequestDto(req.body);
-
-        const user = service.update(Number(req.params.id), {
-            name: dto.name
+        const user = await service.update(Number(req.params.id), {
+            name: dto.name,
+            email: req.body.email
         });
-
-        if (!user) {
-            throw new AppError(404, 'User not found');
-        }
-
-        return res.json({
-            data: toResponse(user)
-        });
+        return res.json({ data: toResponse(user) });
     } catch (err) {
         next(err);
     }
 };
 
-export const remove = (
+export const remove = async (
     req: Request<IdParams>,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const ok = service.remove(Number(req.params.id));
-
-        if (!ok) {
-            throw new AppError(404, 'User not found');
-        }
-
+        await service.remove(Number(req.params.id));
         return res.status(204).send();
     } catch (err) {
         next(err);
