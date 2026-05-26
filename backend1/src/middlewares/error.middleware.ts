@@ -11,10 +11,39 @@ const errorMiddleware: ErrorRequestHandler = (
     res: Response,
     _next: NextFunction
 ) => {
-    console.error(err);
+    const msg = String(err?.message ?? '');
 
-    return res.status(err.status ?? 500).json({
+    if (msg.includes('UNIQUE constraint failed')) {
+        return res.status(409).json({
+            error: {
+                code: 'CONFLICT',
+                message: 'Value already exists',
+                details: [msg]
+            }
+        });
+    }
+
+  
+    if (msg.includes('NOT NULL constraint failed') || msg.includes('CHECK constraint failed')) {
+        return res.status(400).json({
+            error: {
+                code: 'INVALID_DATA',
+                message: 'Invalid data',
+                details: [msg]
+            }
+        });
+    }
+
+    const status = err.status ?? 500;
+    const code = status === 400 ? 'VALIDATION_ERROR'
+        : status === 404 ? 'NOT_FOUND'
+            : status === 409 ? 'CONFLICT'
+                : 'INTERNAL_ERROR';
+
+    console.error(err);
+    return res.status(status).json({
         error: {
+            code,
             message: err.message ?? 'Internal Server Error',
             details: err.details ?? []
         }
