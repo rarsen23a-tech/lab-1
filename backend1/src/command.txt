@@ -40,7 +40,7 @@ curl -X POST http://localhost:3000/api/users -H "Content-Type: application/json"
 Мультитаблична операція
 curl -X POST http://localhost:3000/api/users-with-post -H "Content-Type: application/json" -d "{\"name\":\"John\",\"email\":\"john@example.com\",\"title\":\"My Post\",\"content\":\"Hello!\"}"
 
-#Пагінація і сортування
+Пагінація і сортування
 curl "http://localhost:3000/api/users?page=1&limit=10&sortBy=name&order=asc"
 curl "http://localhost:3000/api/posts?page=1&limit=10&sortBy=title&order=desc"
 
