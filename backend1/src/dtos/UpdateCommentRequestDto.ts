@@ -1,22 +1,12 @@
 type UpdateCommentRequest = {
-    userName?: unknown;
-    content?: unknown;
+    text?: unknown;
 };
 
 class UpdateCommentRequestDto {
-    public userName?: string;
-    public content?: string;
+    public text?: string;
 
-    constructor({ userName, content }: UpdateCommentRequest = {}) {
-        this.userName =
-            typeof userName === 'string'
-                ? userName.trim()
-                : undefined;
-
-        this.content =
-            typeof content === 'string'
-                ? content.trim()
-                : undefined;
+    constructor(data: UpdateCommentRequest = {}) {
+        this.text = typeof data.text === 'string' ? data.text.trim() : undefined;
     }
 }
 
