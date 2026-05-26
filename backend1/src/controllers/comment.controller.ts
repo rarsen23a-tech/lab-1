@@ -1,13 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-
 import * as service from '../services/comment.service';
 import { validateComment } from '../utils/validateComment';
 import AppError from '../utils/AppError';
+import CommentResponseDto from '../dtos/CommentResponseDto';
 
-type IdParams = {
-    id: string;
-};
-
+type IdParams = { id: string };
 type Query = Record<string, string | undefined>;
 
 const toString = (value: unknown): string | undefined => {
@@ -21,121 +18,95 @@ const normalizeOrder = (value?: string): 'asc' | 'desc' | undefined => {
 };
 
 const normalizeSortBy = (value?: string): 'id' | 'postId' | 'userId' | undefined => {
-    if (value === 'id' || value === 'postId' || value === 'userId') {
-        return value;
-    }
+    if (value === 'id' || value === 'postId' || value === 'userId') return value;
     return undefined;
 };
 
-export const getAll = (
+export const getAll = async (
     req: Request<IdParams, unknown, unknown, Query>,
-    res: Response
-) => {
-    res.setHeader('Cache-Control', 'no-store');
-
-    const page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.limit) || 10;
-
-    const result = service.getAll({
-        page,
-        pageSize,
-        postId: req.query.postId ? Number(req.query.postId) : undefined,
-        sortBy: normalizeSortBy(toString(req.query.sortBy)),
-        order: normalizeOrder(toString(req.query.order))
-    });
-
-    return res.json({
-        ...result,
-        items: result.items
-    });
-};
-
-export const getById = (
-    req: Request<IdParams>,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const data = service.getById(Number(req.params.id));
-
-        if (!data) {
-            throw new AppError(404, 'Comment not found');
-        }
-
+        res.setHeader('Cache-Control', 'no-store');
+        const page = Number(req.query.page) || 1;
+        const pageSize = Number(req.query.limit) || 10;
+        const result = await service.getAll({
+            page,
+            pageSize,
+            postId: req.query.postId ? Number(req.query.postId) : undefined,
+            sortBy: normalizeSortBy(toString(req.query.sortBy)),
+            order: normalizeOrder(toString(req.query.order))
+        });
         return res.json({
-            data
+            ...result,
+            items: result.items.map(item => new CommentResponseDto(item))
         });
     } catch (err) {
         next(err);
     }
 };
 
-export const create = (
+export const getById = async (
+    req: Request<IdParams>,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const data = await service.getById(Number(req.params.id));
+        return res.json({ data: new CommentResponseDto(data) });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const create = async (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
     try {
         const errors = validateComment(req.body, true);
-
         if (errors.length) {
             return next(new AppError(400, 'Validation error', errors));
         }
-
-        const created = service.create({
+        const created = await service.create({
             postId: Number(req.body.postId),
             userId: Number(req.body.userId),
             text: req.body.text
         });
-
-        return res.status(201).json({
-            data: created
-        });
+        return res.status(201).json({ data: new CommentResponseDto(created) });
     } catch (err) {
         next(err);
     }
 };
 
-export const update = (
+export const update = async (
     req: Request<IdParams>,
     res: Response,
     next: NextFunction
 ) => {
     try {
         const errors = validateComment(req.body, false);
-
         if (errors.length) {
             return next(new AppError(400, 'Validation error', errors));
         }
-
-        const updated = service.update(Number(req.params.id), {
+        const updated = await service.update(Number(req.params.id), {
             text: req.body.text
         });
-
-        if (!updated) {
-            throw new AppError(404, 'Comment not found');
-        }
-
-        return res.json({
-            data: updated
-        });
+        return res.json({ data: new CommentResponseDto(updated) });
     } catch (err) {
         next(err);
     }
 };
 
-export const remove = (
+export const remove = async (
     req: Request<IdParams>,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const ok = service.remove(Number(req.params.id));
-
-        if (!ok) {
-            throw new AppError(404, 'Comment not found');
-        }
-
+        await service.remove(Number(req.params.id));
         return res.status(204).send();
     } catch (err) {
         next(err);
