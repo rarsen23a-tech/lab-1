@@ -282,7 +282,7 @@ async function openPostModal(postId: number): Promise<void> {
         ui.renderPostModal(post, users, commentsResult.items);
         viewModal.style.display = 'flex';
 
-        // заповнюємо селект авторів після рендеру модалки
+       
         ui.renderUsersToSelect(users);
 
         const addCommentBtn = document.getElementById('addCommentBtn');
@@ -290,7 +290,7 @@ async function openPostModal(postId: number): Promise<void> {
             const newBtn = addCommentBtn.cloneNode(true) as HTMLButtonElement;
             addCommentBtn.parentNode?.replaceChild(newBtn, addCommentBtn);
 
-            // знову заповнюємо селект бо cloneNode копіює без опцій
+            
             ui.renderUsersToSelect(users);
 
             newBtn.addEventListener('click', async () => {
