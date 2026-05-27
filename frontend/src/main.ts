@@ -280,13 +280,19 @@ async function openPostModal(postId: number): Promise<void> {
     try {
         const commentsResult = await api.getComments(postId);
         ui.renderPostModal(post, users, commentsResult.items);
-        ui.renderUsersToSelect(users);
         viewModal.style.display = 'flex';
+
+        // заповнюємо селект авторів після рендеру модалки
+        ui.renderUsersToSelect(users);
 
         const addCommentBtn = document.getElementById('addCommentBtn');
         if (addCommentBtn) {
             const newBtn = addCommentBtn.cloneNode(true) as HTMLButtonElement;
             addCommentBtn.parentNode?.replaceChild(newBtn, addCommentBtn);
+
+            // знову заповнюємо селект бо cloneNode копіює без опцій
+            ui.renderUsersToSelect(users);
+
             newBtn.addEventListener('click', async () => {
                 const commentAuthor = Number((document.getElementById('commentAuthor') as HTMLSelectElement).value);
                 const commentText = (document.getElementById('commentText') as HTMLTextAreaElement).value.trim();
@@ -315,9 +321,7 @@ async function openPostModal(postId: number): Promise<void> {
 
         const viewContent = document.getElementById('viewContent');
         if (viewContent) {
-            const newContent = viewContent.cloneNode(true) as HTMLElement;
-            viewContent.parentNode?.replaceChild(newContent, viewContent);
-            newContent.addEventListener('click', async (e) => {
+            viewContent.addEventListener('click', async (e) => {
                 const target = e.target as HTMLElement;
                 if (target.classList.contains('delete-comment-btn')) {
                     const commentId = Number(target.dataset.id);
@@ -330,7 +334,7 @@ async function openPostModal(postId: number): Promise<void> {
                         ui.showNotice(`Помилка: ${e.message ?? 'невідома'}`, true);
                     }
                 }
-            });
+            }, { once: true });
         }
 
     } catch (err: unknown) {
