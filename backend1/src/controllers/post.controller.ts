@@ -69,6 +69,7 @@ export const create = async (
         const post = await service.create({
             title: dto.title,
             content: dto.content,
+            category: dto.category,
             userId: Number(dto.userId)
         });
         return res.status(201).json({ data: new PostResponseDto(post) });
@@ -90,7 +91,8 @@ export const update = async (
         const dto = new UpdatePostRequestDto(req.body);
         const post = await service.update(Number(req.params.id), {
             title: dto.title,
-            content: dto.content
+            content: dto.content,
+            category: dto.category
         });
         return res.json({ data: new PostResponseDto(post) });
     } catch (err) {
