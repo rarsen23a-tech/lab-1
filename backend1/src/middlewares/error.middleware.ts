@@ -23,7 +23,16 @@ const errorMiddleware: ErrorRequestHandler = (
         });
     }
 
-  
+    if (msg.includes('FOREIGN KEY constraint failed')) {
+        return res.status(409).json({
+            error: {
+                code: 'CONFLICT',
+                message: 'Cannot delete — record has related data',
+                details: [msg]
+            }
+        });
+    }
+
     if (msg.includes('NOT NULL constraint failed') || msg.includes('CHECK constraint failed')) {
         return res.status(400).json({
             error: {
