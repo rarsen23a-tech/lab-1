@@ -1,0 +1,52 @@
+ПЕРЕВІРКА CRUD ОПЕРАЦІЙ USERS
+curl -X POST http://localhost:3000/api/v1/users -H "Content-Type: application/json" -d "{ \"name\": \"Test\" }"
+curl http://localhost:3000/api/v1/users
+curl http://localhost:3000/api/v1/users/1
+curl -X PUT http://localhost:3000/api/v1/users/1 -H "Content-Type: application/json" -d "{ \"name\": \"Updated test\" }"
+curl -X DELETE http://localhost:3000/api/v1/users/1
+==============
+ПЕРЕВІРКА CRUD ОПЕРАЦІЙ POSTS
+curl -X POST http://localhost:3000/api/v1/posts -H "Content-Type: application/json" -d "{ \"title\": \"First Post\", \"content\": \"Hello world\", \"userId\": 1 }"
+curl http://localhost:3000/api/v1/posts
+curl http://localhost:3000/api/v1/posts/1
+curl -X PUT http://localhost:3000/api/v1/posts/1 -H "Content-Type: application/json" -d "{ \"title\": \"Updated title\", \"content\": \"Updated content\" }"
+curl -X DELETE http://localhost:3000/api/v1/posts/1
+==============
+ПЕРЕВІРКА CRUD ОПЕРАЦІЙ COMMENTS
+curl -X POST http://localhost:3000/api/v1/comments -H "Content-Type: application/json" -d "{\"postId\":1,\"userId\":1,\"text\":\"Hello\"}"
+curl -X PUT http://localhost:3000/api/v1/comments/1 -H "Content-Type: application/json" -d "{\"text\":\"updated comment\"}"
+curl -X DELETE http://localhost:3000/api/v1/comments/1
+curl http://localhost:3000/api/v1/comments
+curl http://localhost:3000/api/v1/comments/1
+==============
+ПЕРЕВІРКА ВАЛІДАЦІЇ ТА ПОМИЛОК
+400 - порожнє тіло
+curl -X POST http://localhost:3000/api/v1/users -H "Content-Type: application/json" -d "{}"
+404 - не знайдено
+curl http://localhost:3000/api/v1/users/99999
+409 Conflict - дублікат email
+curl -X POST http://localhost:3000/api/v1/users -H "Content-Type: application/json" -d "{\"name\":\"Alice\",\"email\":\"alice@example.com\"}"
+curl -X POST http://localhost:3000/api/v1/users -H "Content-Type: application/json" -d "{\"name\":\"Alice2\",\"email\":\"alice@example.com\"}"
+==============
+ДОДАТКОВІ ЕНДПОІНТИ
+JOIN - пости з авторами
+curl http://localhost:3000/api/v1/posts-with-authors
+Агрегація - статистика постів
+curl http://localhost:3000/api/v1/stats/posts-per-user
+Мультитаблична операція
+curl -X POST http://localhost:3000/api/v1/users-with-post -H "Content-Type: application/json" -d "{\"name\":\"John\",\"email\":\"john@example.com\",\"title\":\"My Post\",\"content\":\"Hello!\"}"
+==============
+ПОШУК, ФІЛЬТРАЦІЯ, СОРТУВАННЯ
+LIKE пошук - нормальний
+curl "http://localhost:3000/api/v1/search/posts?q=First"
+LIKE пошук - SQL injection демонстрація
+curl "http://localhost:3000/api/v1/search/posts?q=%27%20OR%20%271%27%3D%271"
+Пагінація і сортування
+curl "http://localhost:3000/api/v1/users?page=1&limit=10&sortBy=name&order=asc"
+curl "http://localhost:3000/api/v1/posts?page=1&limit=10&sortBy=title&order=desc"
+Фільтрація
+curl "http://localhost:3000/api/v1/posts?userId=1"
+curl "http://localhost:3000/api/v1/comments?postId=1"
+==============
+ЛОГУВАННЯ DB ПОДІЙ (дивитись термінал бекенду)
+curl "http://localhost:3000/api/v1/search/posts?q=First"
