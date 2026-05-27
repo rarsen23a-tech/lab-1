@@ -1,39 +1,73 @@
-Lab 3
-
+# Лабораторна робота №4 
 ## Запуск
 
+### Бекенд
 ```bash
+cd backend
 npm install
-npm run seed
 npm run dev
 ```
-
 Сервер запускається на http://localhost:3000
 
-База даних створюється автоматично у `data/app.db`
+### Фронтенд
+```bash
+cd frontend
+npm install
+npx http-server . -p 5500
+```
+Відкрити у браузері: http://127.0.0.1:5500
+
+> Фронтенд **обов'язково** відкривати через http://, не як file://
+
+## Структура проекту
+backend/
+src/
+controllers/     — обробники запитів
+services/        — бізнес-логіка
+repositories/    — робота з БД
+routes/          — маршрути
+dtos/            — DTO класи
+middlewares/     — логер, обробник помилок
+utils/           — AppError, валідатори
+db/              — dbClient, migrate
+migrations/        — SQL міграції
+data/              — SQLite база даних
+frontend/
+src/
+config.ts        — API_BASE_URL
+dtos.ts          — TypeScript інтерфейси
+apiClient.ts     — HTTP клієнт (fetch + AbortController)
+ui.ts            — рендеринг DOM
+main.ts          — точка входу, логіка сценаріїв
+public/
+js/              — скомпільований TypeScript
+index.html
+styles.css
+tsconfig.json
 
 ## Схема БД
 
-### Таблиці та поля
-
-**Users**
+### Users
 | Поле | Тип | Обмеження |
 |------|-----|-----------|
 | id | INTEGER | PRIMARY KEY |
 | name | TEXT | NOT NULL |
 | email | TEXT | UNIQUE |
+| username | TEXT | — |
+| role | TEXT | — |
 | createdAt | TEXT | NOT NULL |
 
-**Posts**
+### Posts
 | Поле | Тип | Обмеження |
 |------|-----|-----------|
 | id | INTEGER | PRIMARY KEY |
 | userId | INTEGER | NOT NULL, FK → Users.id |
 | title | TEXT | NOT NULL |
 | content | TEXT | NOT NULL |
+| category | TEXT | — |
 | createdAt | TEXT | NOT NULL |
 
-**Comments**
+### Comments
 | Поле | Тип | Обмеження |
 |------|-----|-----------|
 | id | INTEGER | PRIMARY KEY |
@@ -42,82 +76,103 @@ npm run dev
 | text | TEXT | NOT NULL |
 | createdAt | TEXT | NOT NULL |
 
-### Зв'язки
-- User має багато Posts (1:N) — ON DELETE CASCADE
-- Post має багато Comments (1:N) — ON DELETE CASCADE
-- User має багато Comments (1:N) — ON DELETE RESTRICT
-
-### Обмеження
-- NOT NULL — всі обов'язкові поля
-- UNIQUE — email користувача
-- FOREIGN KEY — зв'язки між таблицями
-- PRAGMA foreign_keys = ON — увімкнено перевірку FK
-
 ## Міграції
+001_init_users.sql
+002_init_posts.sql
+003_init_comments.sql
+004_add_indexes.sql
+005_add_email_to_users.sql
+006_add_unique_email.sql
+007_add_username_to_users.sql
+008_add_role_to_users.sql
+009_add_category_to_posts.sql
 
-Міграції знаходяться в папці `migrations/`:
- `001_init_users.sql` — створення таблиці Users
- `002_init_posts.sql` — створення таблиці Posts
- `003_init_comments.sql` — створення таблиці Comments
- `004_add_indexes.sql` — індекси для прискорення пошуку
- `005_add_email_to_users.sql` — додавання колонки email
- `006_add_unique_email.sql` — унікальний індекс на email
-
-При старті застосунок застосовує тільки ті міграції яких ще немає в таблиці `schema_migrations`.
-
-## Індекси
-
- `idx_posts_userId` — прискорює пошук постів по userId
- `idx_comments_postId` — прискорює пошук коментарів по postId
-
-## Ендпоінти
+## Ендпоінти API (v1)
 
 ### Users
-GET    /api/users
-GET    /api/users/:id
-POST   /api/users
-PUT    /api/users/:id
-DELETE /api/users/:id
+GET    /api/v1/users
+GET    /api/v1/users/:id
+POST   /api/v1/users
+PUT    /api/v1/users/:id
+DELETE /api/v1/users/:id
 
 ### Posts
-GET    /api/posts
-GET    /api/posts/:id
-POST   /api/posts
-PUT    /api/posts/:id
-DELETE /api/posts/:id
+GET    /api/v1/posts
+GET    /api/v1/posts/:id
+POST   /api/v1/posts
+PUT    /api/v1/posts/:id
+DELETE /api/v1/posts/:id
 
 ### Comments
-GET    /api/comments
-GET    /api/comments/:id
-POST   /api/comments
-PUT    /api/comments/:id
-DELETE /api/comments/:id
+GET    /api/v1/comments
+GET    /api/v1/comments/:id
+POST   /api/v1/comments
+PUT    /api/v1/comments/:id
+DELETE /api/v1/comments/:id
 
 ### Додаткові
-GET  /api/posts-with-authors        # JOIN: пости з авторами
-GET  /api/stats/posts-per-user      # Агрегація: кількість постів
-GET  /api/search/posts?q=текст      # Пошук через LIKE
-POST /api/users-with-post           # Операція на кілька таблиць
+GET  /api/v1/posts-with-authors
+GET  /api/v1/stats/posts-per-user
+GET  /api/v1/search/posts?q=текст
+POST /api/v1/users-with-post
 
-## Приклади запитів
+## Правила сумісності DTO (v1)
 
-Всі приклади curl команд знаходяться у файлі `command.txt`.
+1. Поля не перейменовуються і не видаляються у v1
+2. Нові поля додаються як необов'язкові з дефолтами
+3. Breaking changes лише при введенні /api/v2/
+
+## Приклади перевірки
+
+### Створити користувача
+```bash
+curl -X POST http://localhost:3000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"Alice\",\"email\":\"alice@example.com\",\"username\":\"alice123\",\"role\":\"admin\"}"
+```
+
+### Отримати список користувачів
+```bash
+curl http://localhost:3000/api/v1/users
+```
+
+### Створити пост
+```bash
+curl -X POST http://localhost:3000/api/v1/posts \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"Тест\",\"content\":\"Вміст\",\"category\":\"Навчання\",\"userId\":1}"
+```
+
+### Додати коментар
+```bash
+curl -X POST http://localhost:3000/api/v1/comments \
+  -H "Content-Type: application/json" \
+  -d "{\"postId\":1,\"userId\":1,\"text\":\"Коментар\"}"
+```
+
+### Перевірка помилки валідації (400)
+```bash
+curl -X POST http://localhost:3000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"\"}"
+```
+
+### Перевірка 404
+```bash
+curl http://localhost:3000/api/v1/users/99999
+```
+
+### Перевірка CORS
+Відкрити http://127.0.0.1:5500 у браузері — запити до бекенду мають проходити без CORS помилок.
 
 ## SQL Injection демонстрація
 
-Endpoint `/api/search/posts` використовує рядкову конкатенацію:
-```sql
-WHERE title LIKE '%${q}%'
-```
+Endpoint `/api/v1/search/posts` використовує рядкову конкатенацію — навмисно для демонстрації. Виправлення через параметризовані запити буде в лабораторній роботі №5.
 
-Це небезпечно бо користувацький ввід вставляється прямо в SQL без перевірки.
+## Технічні особливості
 
-Приклад небезпечного вводу:
-/api/search/posts?q=' OR '1'='1
-
-Запит стає:
-```sql
-WHERE title LIKE '%' OR '1'='1'%'
-```
-
-Умова `'1'='1'` завжди true — повертає всі записи незалежно від фільтра. Виправлення через параметризовані запити буде реалізоване в лабораторній роботі №5.
+- **TypeScript** на фронтенді з типізованими DTO
+- **AbortController** — таймаут запитів 10 секунд
+- **CORS whitelist** — дозволені конкретні origins
+- **Стани UI** — loading / success / empty / error для кожного запиту
+- **Версійність API** — префікс /api/v1/
