@@ -4,6 +4,8 @@ import AppError from '../utils/AppError';
 type UpdateUserInput = {
     name?: string;
     email?: string;
+    username?: string;
+    role?: string;
 };
 
 type GetAllQuery = {
@@ -58,19 +60,32 @@ export const getById = async (id: number | string) => {
     return user;
 };
 
-export const create = async (data: { name: string; email?: string }) => {
+export const create = async (data: { name: string; email?: string; username?: string; role?: string }) => {
     const errors: string[] = [];
     const name = data.name;
+
     if (typeof name !== 'string' || !name.trim()) {
         errors.push('Name is required');
     }
     if (data.email !== undefined && typeof data.email !== 'string') {
         errors.push('Email must be a string');
     }
+    if (data.username !== undefined && (typeof data.username !== 'string' || data.username.trim().length < 3)) {
+        errors.push('Username must be at least 3 characters');
+    }
+    if (data.role !== undefined && !['user', 'admin', 'moderator'].includes(data.role)) {
+        errors.push('Role must be user, admin or moderator');
+    }
     if (errors.length) {
         throw new AppError(400, 'Invalid request body', errors);
     }
-    return await repo.create({ name: name.trim(), email: data.email });
+
+    return await repo.create({
+        name: name.trim(),
+        email: data.email,
+        username: data.username,
+        role: data.role
+    });
 };
 
 export const update = async (id: number | string, data: UpdateUserInput) => {
@@ -78,20 +93,32 @@ export const update = async (id: number | string, data: UpdateUserInput) => {
     if (Number.isNaN(userId)) {
         throw new AppError(400, 'Invalid id');
     }
+
     const errors: string[] = [];
     if (data.name !== undefined && (typeof data.name !== 'string' || !data.name.trim())) {
         errors.push('Name cannot be empty');
     }
+    if (data.username !== undefined && (typeof data.username !== 'string' || data.username.trim().length < 3)) {
+        errors.push('Username must be at least 3 characters');
+    }
+    if (data.role !== undefined && !['user', 'admin', 'moderator'].includes(data.role)) {
+        errors.push('Role must be user, admin or moderator');
+    }
     if (errors.length) {
         throw new AppError(400, 'Invalid request body', errors);
     }
+
     const updated = await repo.update(userId, {
         name: data.name?.trim(),
-        email: data.email
+        email: data.email,
+        username: data.username,
+        role: data.role
     });
+
     if (!updated) {
         throw new AppError(404, 'User not found');
     }
+
     return updated;
 };
 
