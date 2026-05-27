@@ -8,7 +8,7 @@ import AppError from '../utils/AppError';
 
 type IdParams = { id: string };
 type Query = Record<string, string | undefined>;
-type User = { id: number; name: string; email: string | null; createdAt: string };
+type User = { id: number; name: string; email: string | null; username: string | null; role: string | null; createdAt: string };
 
 const toResponse = (user: User): UserResponseDto => new UserResponseDto(user);
 
@@ -71,7 +71,9 @@ export const create = async (
         const dto = new CreateUserRequestDto(req.body);
         const user = await service.create({
             name: dto.name,
-            email: req.body.email
+            email: dto.email,
+            username: dto.username,
+            role: dto.role
         });
         return res.status(201).json({ data: toResponse(user) });
     } catch (err) {
@@ -92,7 +94,9 @@ export const update = async (
         const dto = new UpdateUserRequestDto(req.body);
         const user = await service.update(Number(req.params.id), {
             name: dto.name,
-            email: req.body.email
+            email: dto.email,
+            username: dto.username,
+            role: dto.role
         });
         return res.json({ data: toResponse(user) });
     } catch (err) {
