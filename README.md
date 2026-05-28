@@ -227,6 +227,4 @@ curl -I http://localhost:3000/api/v1/users
 ### Уразливості і захист
 Детальний опис всіх 4 сценаріїв безпеки — у файлі [REPORT.md](./REPORT.md).
 
-## SQL Injection
 
-Endpoint `/api/v1/search/posts` — виправлено параметризованими запитами в лабораторній роботі №5. Детальніше у [REPORT.md](./REPORT.md).
