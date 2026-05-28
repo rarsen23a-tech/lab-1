@@ -20,30 +20,34 @@ npx http-server . -p 5500
 > Фронтенд **обов'язково** відкривати через http://, не як file://
 
 ## Структура проєкту
+
+```
 backend/
-src/
-controllers/     — обробники запитів
-services/        — бізнес-логіка
-repositories/    — робота з БД
-routes/          — маршрути
-dtos/            — DTO класи
-middlewares/     — логер, обробник помилок
-utils/           — AppError, валідатори
-db/              — dbClient, migrate
-migrations/        — SQL міграції
-data/              — SQLite база даних
+  src/
+    controllers/    — обробники запитів
+    services/       — бізнес-логіка
+    repositories/   — робота з БД
+    routes/         — маршрути
+    dtos/           — DTO класи
+    middlewares/    — логер, обробник помилок
+    utils/          — AppError, валідатори
+    db/             — dbClient, migrate
+  migrations/       — SQL міграції
+  data/             — SQLite база даних
+
 frontend/
-src/
-config.ts        — API_BASE_URL
-dtos.ts          — TypeScript інтерфейси
-apiClient.ts     — HTTP клієнт (fetch + AbortController)
-ui.ts            — рендеринг DOM
-main.ts          — точка входу, логіка сценаріїв
-public/
-js/              — скомпільований TypeScript
-index.html
-styles.css
-tsconfig.json
+  src/
+    config.ts       — API_BASE_URL
+    dtos.ts         — TypeScript інтерфейси
+    apiClient.ts    — HTTP клієнт (fetch + AbortController)
+    ui.ts           — рендеринг DOM
+    main.ts         — точка входу, логіка сценаріїв
+  public/
+    js/             — скомпільований TypeScript
+  index.html
+  styles.css
+  tsconfig.json
+```
 
 ## Схема БД
 
