@@ -3,13 +3,14 @@ import cors from 'cors';
 import userRoutes from './routes/user.routes';
 import postRoutes from './routes/post.routes';
 import commentRoutes from './routes/comment.routes';
+import noteRoutes from './routes/note.routes';
 import logger from './middlewares/logger.middleware';
 import errorHandler from './middlewares/error.middleware';
 import { all, get, run } from './db/dbClient';
 
 const app = express();
 
-// CORS
+
 const allowedOrigins = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
@@ -24,20 +25,29 @@ app.use(cors({
         return cb(new Error('CORS: origin is not allowed'), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-UserId']
 }));
 
 app.options('/{*path}', cors());
 
+
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+});
+
 app.use(express.json());
 app.use(logger);
 
-// Routes з v1 префіксом
+
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/comments', commentRoutes);
+app.use('/api/v1/notes', noteRoutes);
 
-// JOIN endpoint
+
 app.get('/api/v1/posts-with-authors', async (req, res, next) => {
     try {
         const rows = await all(`
@@ -58,7 +68,7 @@ app.get('/api/v1/posts-with-authors', async (req, res, next) => {
     }
 });
 
-// Агрегація
+
 app.get('/api/v1/stats/posts-per-user', async (req, res, next) => {
     try {
         const rows = await all(`
@@ -77,25 +87,24 @@ app.get('/api/v1/stats/posts-per-user', async (req, res, next) => {
     }
 });
 
-// LIKE пошук
 app.get('/api/v1/search/posts', async (req, res, next) => {
     try {
         const q = (req.query.q as string) || '';
         const sql = `
             SELECT id, title, content, userId, createdAt
             FROM Posts
-            WHERE title LIKE '%${q}%'
+            WHERE title LIKE ?
             ORDER BY id DESC;
         `;
-        console.log('[SQL]', sql.trim());
-        const rows = await all(sql);
+        console.log('[SQL] SELECT ... WHERE title LIKE ?', [`%${q}%`]);
+        const rows = await all(sql, [`%${q}%`]);
         return res.json({ data: rows });
     } catch (err) {
         next(err);
     }
 });
 
-// Мультитаблична операція
+
 app.post('/api/v1/users-with-post', async (req, res, next) => {
     try {
         const { name, email, title, content } = req.body;
@@ -105,25 +114,21 @@ app.post('/api/v1/users-with-post', async (req, res, next) => {
             });
         }
         const now = new Date().toISOString();
-        const safeName = String(name).replace(/'/g, "''");
-        const safeEmail = email ? `'${String(email).replace(/'/g, "''")}'` : 'NULL';
-        const safeTitle = String(title).replace(/'/g, "''");
-        const safeContent = String(content).replace(/'/g, "''");
 
-        const userResult = await run(`
-            INSERT INTO Users (name, email, createdAt)
-            VALUES ('${safeName}', ${safeEmail}, '${now}');
-        `);
+        const userResult = await run(
+            'INSERT INTO Users (name, email, createdAt) VALUES (?, ?, ?);',
+            [String(name), email ?? null, now]
+        );
 
         const userId = userResult.lastID;
 
-        const postResult = await run(`
-            INSERT INTO Posts (userId, title, content, createdAt)
-            VALUES (${userId}, '${safeTitle}', '${safeContent}', '${now}');
-        `);
+        const postResult = await run(
+            'INSERT INTO Posts (userId, title, content, createdAt) VALUES (?, ?, ?, ?);',
+            [userId, String(title), String(content), now]
+        );
 
-        const user = await get(`SELECT id, name, email, createdAt FROM Users WHERE id = ${userId};`);
-        const post = await get(`SELECT id, title, content, userId, createdAt FROM Posts WHERE id = ${postResult.lastID};`);
+        const user = await get('SELECT id, name, email, createdAt FROM Users WHERE id = ?;', [userId]);
+        const post = await get('SELECT id, title, content, userId, createdAt FROM Posts WHERE id = ?;', [postResult.lastID]);
 
         return res.status(201).json({ data: { user, post } });
     } catch (err) {
