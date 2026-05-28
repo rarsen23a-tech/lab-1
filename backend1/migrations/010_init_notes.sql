@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS Notes (
+    id INTEGER PRIMARY KEY,
+    ownerUserId INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
+    FOREIGN KEY (ownerUserId) REFERENCES Users(id) ON DELETE CASCADE
+);
