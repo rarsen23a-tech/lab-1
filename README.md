@@ -1,4 +1,4 @@
-# Лабораторна робота №4 
+# Лабораторна робота №4/5 
 ## Запуск
 
 ### Бекенд
@@ -180,3 +180,53 @@ Endpoint `/api/v1/search/posts` використовує рядкову конк
 - **CORS whitelist** — дозволені конкретні origins
 - **Стани UI** — loading / success / empty / error для кожного запиту
 - **Версійність API** — префікс /api/v1/
+
+## Лабораторна робота №5
+
+### Нотатки (захищений ресурс)
+```bash
+# Створити нотатку (юзер 1)
+curl -X POST http://localhost:3000/api/v1/notes \
+  -H "Content-Type: application/json" \
+  -H "X-Demo-UserId: 1" \
+  -d "{\"title\":\"Моя нотатка\",\"body\":\"Секретний текст\"}"
+
+# Читати свою нотатку (юзер 1) — OK
+curl http://localhost:3000/api/v1/notes/1 -H "X-Demo-UserId: 1"
+
+# Читати чужу нотатку (юзер 2) — 404
+curl http://localhost:3000/api/v1/notes/1 -H "X-Demo-UserId: 2"
+
+# Без заголовка — 401
+curl http://localhost:3000/api/v1/notes/1
+```
+
+### Notes (IDOR захист)
+| Поле | Тип | Обмеження |
+|------|-----|-----------|
+| id | INTEGER | PRIMARY KEY |
+| ownerUserId | INTEGER | NOT NULL, FK → Users.id |
+| title | TEXT | NOT NULL |
+| body | TEXT | NOT NULL |
+| createdAt | TEXT | NOT NULL |
+
+### Перевірка SQL Injection (виправлено)
+```bash
+# Нормальний пошук — працює
+curl "http://localhost:3000/api/v1/search/posts?q=First"
+
+# SQL injection — після виправлення повертає порожній масив
+curl "http://localhost:3000/api/v1/search/posts?q=%27%20OR%20%271%27%3D%271"
+```
+
+### Перевірка Security Headers
+```bash
+curl -I http://localhost:3000/api/v1/users
+```
+
+### Уразливості і захист
+Детальний опис всіх 4 сценаріїв безпеки — у файлі [REPORT.md](./REPORT.md).
+
+## SQL Injection
+
+Endpoint `/api/v1/search/posts` — виправлено параметризованими запитами в лабораторній роботі №5. Детальніше у [REPORT.md](./REPORT.md).
