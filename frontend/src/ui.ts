@@ -13,10 +13,10 @@ function formatDate(iso: string): string {
 export function showNotice(text: string, isError = false): void {
     const el = document.getElementById('notice');
     if (!el) return;
-    el.innerHTML = text;
+    el.textContent = text;
     el.className = isError ? 'notice error' : 'notice success';
     setTimeout(() => {
-        el.innerHTML = '';
+        el.textContent = '';
         el.className = 'notice';
     }, 4000);
 }
@@ -24,10 +24,23 @@ export function showNotice(text: string, isError = false): void {
 export function renderStatus(containerId: string, status: 'loading' | 'empty' | 'error' | 'success', error?: string): void {
     const el = document.getElementById(containerId);
     if (!el) return;
-    if (status === 'loading') el.innerHTML = '<p class="status-loading">Завантаження...</p>';
-    else if (status === 'empty') el.innerHTML = '<p class="status-empty">Немає даних</p>';
-    else if (status === 'error') el.innerHTML = `<p class="status-error">Помилка: ${error ?? 'невідома'}</p>`;
-    else el.innerHTML = '';
+    el.innerHTML = '';
+    if (status === 'loading') {
+        const p = document.createElement('p');
+        p.className = 'status-loading';
+        p.textContent = 'Завантаження...';
+        el.appendChild(p);
+    } else if (status === 'empty') {
+        const p = document.createElement('p');
+        p.className = 'status-empty';
+        p.textContent = 'Немає даних';
+        el.appendChild(p);
+    } else if (status === 'error') {
+        const p = document.createElement('p');
+        p.className = 'status-error';
+        p.textContent = `Помилка: ${error ?? 'невідома'}`;
+        el.appendChild(p);
+    }
 }
 
 export function renderUsersTable(users: UserDto[]): void {
@@ -36,17 +49,34 @@ export function renderUsersTable(users: UserDto[]): void {
     tbody.innerHTML = '';
     users.forEach(user => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.name}</td>
-            <td>${user.email ?? '—'}</td>
-            <td>${user.username ?? '—'}</td>
-            <td>${user.role ?? '—'}</td>
-            <td>${formatDate(user.createdAt)}</td>
-            <td>
-                <button type="button" class="delete-user-btn btn-danger" data-id="${user.id}">Видалити</button>
-            </td>
-        `;
+
+        const tdId = document.createElement('td');
+        tdId.textContent = String(user.id);
+
+        const tdName = document.createElement('td');
+        tdName.textContent = user.name;
+
+        const tdEmail = document.createElement('td');
+        tdEmail.textContent = user.email ?? '—';
+
+        const tdUsername = document.createElement('td');
+        tdUsername.textContent = user.username ?? '—';
+
+        const tdRole = document.createElement('td');
+        tdRole.textContent = user.role ?? '—';
+
+        const tdDate = document.createElement('td');
+        tdDate.textContent = formatDate(user.createdAt);
+
+        const tdActions = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'delete-user-btn btn-danger';
+        deleteBtn.dataset.id = String(user.id);
+        deleteBtn.textContent = 'Видалити';
+        tdActions.appendChild(deleteBtn);
+
+        tr.append(tdId, tdName, tdEmail, tdUsername, tdRole, tdDate, tdActions);
         tbody.appendChild(tr);
     });
 }
@@ -73,18 +103,44 @@ export function renderPostsTable(posts: PostDto[], users: UserDto[]): void {
     posts.forEach(post => {
         const user = users.find(u => u.id === post.userId);
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${post.id}</td>
-            <td>${post.title}</td>
-            <td>${post.category ?? '—'}</td>
-            <td>${user ? user.name : '—'}</td>
-            <td>${formatDate(post.createdAt)}</td>
-            <td>
-                <button type="button" class="view-post-btn btn-secondary" data-id="${post.id}">Переглянути</button>
-                <button type="button" class="edit-post-btn btn-primary" data-id="${post.id}">Редагувати</button>
-                <button type="button" class="delete-post-btn btn-danger" data-id="${post.id}">Видалити</button>
-            </td>
-        `;
+
+        const tdId = document.createElement('td');
+        tdId.textContent = String(post.id);
+
+        const tdTitle = document.createElement('td');
+        tdTitle.textContent = post.title;
+
+        const tdCategory = document.createElement('td');
+        tdCategory.textContent = post.category ?? '—';
+
+        const tdAuthor = document.createElement('td');
+        tdAuthor.textContent = user ? user.name : '—';
+
+        const tdDate = document.createElement('td');
+        tdDate.textContent = formatDate(post.createdAt);
+
+        const tdActions = document.createElement('td');
+
+        const viewBtn = document.createElement('button');
+        viewBtn.type = 'button';
+        viewBtn.className = 'view-post-btn btn-secondary';
+        viewBtn.dataset.id = String(post.id);
+        viewBtn.textContent = 'Переглянути';
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'edit-post-btn btn-primary';
+        editBtn.dataset.id = String(post.id);
+        editBtn.textContent = 'Редагувати';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'delete-post-btn btn-danger';
+        deleteBtn.dataset.id = String(post.id);
+        deleteBtn.textContent = 'Видалити';
+
+        tdActions.append(viewBtn, editBtn, deleteBtn);
+        tr.append(tdId, tdTitle, tdCategory, tdAuthor, tdDate, tdActions);
         tbody.appendChild(tr);
     });
 }
@@ -93,39 +149,105 @@ export function renderPostModal(post: PostDto, users: UserDto[], comments: Comme
     const user = users.find(u => u.id === post.userId);
     const content = document.getElementById('viewContent');
     if (!content) return;
+    content.innerHTML = '';
 
-    const commentsHtml = comments.length === 0
-        ? '<p>Немає коментарів</p>'
-        : comments.map(c => {
+    // Заголовок
+    const h3 = document.createElement('h3');
+    h3.textContent = post.title;
+
+    const pCategory = document.createElement('p');
+    const bCategory = document.createElement('b');
+    bCategory.textContent = 'Категорія: ';
+    pCategory.appendChild(bCategory);
+    pCategory.append(post.category ?? '—');
+
+    const pAuthor = document.createElement('p');
+    const bAuthor = document.createElement('b');
+    bAuthor.textContent = 'Автор: ';
+    pAuthor.appendChild(bAuthor);
+    pAuthor.append(user ? user.name : '—');
+
+    const pDate = document.createElement('p');
+    const bDate = document.createElement('b');
+    bDate.textContent = 'Створено: ';
+    pDate.appendChild(bDate);
+    pDate.append(formatDate(post.createdAt));
+
+    const hr1 = document.createElement('hr');
+
+    const pContent = document.createElement('p');
+    pContent.textContent = post.content;
+
+    const hr2 = document.createElement('hr');
+
+    const h4Comments = document.createElement('h4');
+    h4Comments.textContent = 'Коментарі';
+
+    content.append(h3, pCategory, pAuthor, pDate, hr1, pContent, hr2, h4Comments);
+
+    // Коментарі
+    if (comments.length === 0) {
+        const p = document.createElement('p');
+        p.textContent = 'Немає коментарів';
+        content.appendChild(p);
+    } else {
+        comments.forEach(c => {
             const commentUser = users.find(u => u.id === c.userId);
-            return `
-                <div class="comment">
-                    <p><b>${commentUser ? commentUser.name : '—'}:</b> ${c.text}</p>
-                    <small>${formatDate(c.createdAt)}</small>
-                    <button type="button" class="delete-comment-btn btn-danger" data-id="${c.id}">Видалити</button>
-                </div>
-            `;
-        }).join('');
+            const div = document.createElement('div');
+            div.className = 'comment';
 
-    content.innerHTML = `
-        <h3>${post.title}</h3>
-        <p><b>Категорія:</b> ${post.category ?? '—'}</p>
-        <p><b>Автор:</b> ${user ? user.name : '—'}</p>
-        <p><b>Створено:</b> ${formatDate(post.createdAt)}</p>
-        <hr>
-        <p>${post.content}</p>
-        <hr>
-        <h4>Коментарі</h4>
-        ${commentsHtml}
-        <div class="comment-form">
-            <h4>Додати коментар</h4>
-            <select id="commentAuthor" class="author-select">
-                <option value="">-- Оберіть автора --</option>
-            </select>
-            <small class="error" id="commentAuthorError"></small>
-            <textarea id="commentText" placeholder="Текст коментаря"></textarea>
-            <small class="error" id="commentTextError"></small>
-            <button type="button" id="addCommentBtn">Додати коментар</button>
-        </div>
-    `;
+            const p = document.createElement('p');
+            const b = document.createElement('b');
+            b.textContent = `${commentUser ? commentUser.name : '—'}: `;
+            p.appendChild(b);
+            p.append(c.text);
+
+            const small = document.createElement('small');
+            small.textContent = formatDate(c.createdAt);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'delete-comment-btn btn-danger';
+            deleteBtn.dataset.id = String(c.id);
+            deleteBtn.textContent = 'Видалити';
+
+            div.append(p, small, deleteBtn);
+            content.appendChild(div);
+        });
+    }
+
+    // Форма коментаря
+    const commentForm = document.createElement('div');
+    commentForm.className = 'comment-form';
+
+    const h4Add = document.createElement('h4');
+    h4Add.textContent = 'Додати коментар';
+
+    const select = document.createElement('select');
+    select.id = 'commentAuthor';
+    select.className = 'author-select';
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '-- Оберіть автора --';
+    select.appendChild(defaultOption);
+
+    const authorErr = document.createElement('small');
+    authorErr.className = 'error';
+    authorErr.id = 'commentAuthorError';
+
+    const textarea = document.createElement('textarea');
+    textarea.id = 'commentText';
+    textarea.placeholder = 'Текст коментаря';
+
+    const textErr = document.createElement('small');
+    textErr.className = 'error';
+    textErr.id = 'commentTextError';
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.id = 'addCommentBtn';
+    addBtn.textContent = 'Додати коментар';
+
+    commentForm.append(h4Add, select, authorErr, textarea, textErr, addBtn);
+    content.appendChild(commentForm);
 }
