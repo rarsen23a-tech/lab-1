@@ -91,7 +91,6 @@ frontend/
 008_add_role_to_users.sql
 009_add_category_to_posts.sql
 010_init_notes.sql
-011_add_password_to_users.sql
 
 ## Ендпоінти API (v1)
 
